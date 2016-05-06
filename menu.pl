@@ -8,6 +8,8 @@
 
 % connected : (position, object, father, left, right)
 
+:- dynamic connected/5.
+
 % Left tree
 connected(1, startMaze, nil, 2, 15).
 connected(2, noObject, 1, 3, 4).
@@ -38,13 +40,15 @@ connected(21, hole, 19, nil, nil).
 bag(nothing).
 
 % Internationalization
-portuguese(startMaze, inicio).
-portuguese(noObject, nada).
-portuguese(hole, buraco).
-portuguese(bear, urso).
-portuguese(flashlight, lanterna).
-portuguese(sword, espada).
-portuguese(endMaze, saida).
+portuguese(startMaze, "Inicio").
+portuguese(noObject, "Nada").
+portuguese(hole, "Buraco").
+portuguese(bear, "Urso").
+portuguese(flashlight, "Lanterna").
+portuguese(sword, "Espada").
+portuguese(key10, "Chave10").
+portuguese(door10, "Porta10").
+portuguese(endMaze, "Saida").
 
 %----------------------------------------------------- Rules ---------------------------------------------------- %
 % -------------- Play --------------- %
@@ -52,7 +56,7 @@ portuguese(endMaze, saida).
 startPlay :- write('Bem-vindo ao Blind Mazell'), nl,
              write('Digite o seu nome: '), read(Player), nl,
              write('Olá '), write(Player), nl,
-             play(1).
+             play(1). % Star play on the first position
              
 play(Position) :- nl, write('Para onde você deseja ir?'), nl, write('a - Esquerda, d- Direita, s-Voltar'), showOptionFlashlight, 
                 read(Option), option(Option, Position).
@@ -78,7 +82,7 @@ option(s, Position) :- connected(Position, _, Father, _, _), write(Father), (Fat
                        checkObject(Father, Object)) ; 
                        nl, write("Você está no começo do labirinto, não dá mais pra voltar!"), nl, play(Position).
 
-option(f, Position) :- printSubMazes(Position), nl, play(Position).
+option(f, Position) :- subMazes(Position), nl, play(Position).
 
 option(_, Position) :- write('Opção inexistente'), nl, play(Position).
 
@@ -89,12 +93,13 @@ showOptionFlashlight :- checkBag(flashlight), write(', f-Ligar lanterna'); !.
 checkObject(Position, noObject) :- play(Position).
 
 checkObject(Position, bear) :- (checkBag(sword), nl, write("Voce encontrou um urso, mas voce tinha uma espada e o matou"), 
-                                deleteFromBag(sword),nl, play(Position));
+                                deleteFromBag(sword),nl, removeFromMaze(Position), play(Position));
                                 nl, write("Ghrrr!! Voce encontrou um urso, mas voce não tinha uma espada e morreu. Fim do jogo."), nl.
 
-checkObject(Position, sword) :- nl, write("Voce encontrou uma espada"), nl, addOnBag(sword), play(Position).
+checkObject(Position, sword) :- nl, write("Voce encontrou uma espada"), nl, addOnBag(sword), removeFromMaze(Position), play(Position).
 
-checkObject(Position, flashlight) :- nl, write("Voce encontrou uma lanterna. Voce pode usar apenas uma vez para enxergar o que tem nos seus possíveis caminhos."), nl, addOnBag(flashlight), play(Position).
+checkObject(Position, flashlight) :- nl, write("Voce encontrou uma lanterna. Voce pode usar apenas uma vez para enxergar o que tem nos seus possíveis caminhos."), nl, 
+									 addOnBag(flashlight), removeFromMaze(Position), play(Position). 
 
 checkObject(_, hole) :- nl, write("Voce caiu em um buraco! Fim do jogo."), nl.
 
@@ -107,36 +112,35 @@ addOnBag(Object) :- asserta(bag(Object)).
 deleteFromBag(Object) :- retract(bag(Object)).
 
 
-isConnected(Position) :- connected(Position, _, Father, Left, Right), nl,
-                         write(Father), nl, printPosition(Left),nl, printPosition(Right).
+% ------------ Show sub mazes ----------- %
+subMazes(Position) :- deleteFromBag(flashlight),
+                       connected(Position, _, _, Left, Right), 
+                       
+                       (
+                        (Left == nil, nl, write('Não há saída a esquerda'), nl);
+                        (connected(Left, LeftObject, _, _, _), 
+                        nl, inPortuguese(LeftObject), write(' a esquerda.'), nl)
+                       ),                           
+                       
+                       (
+                        (Right == nil, nl, write('Nada há saída a direita'), nl);
+                        (connected(Right, RightObject, _, _, _),
+                        nl, inPortuguese(RightObject), write(' a direita.'), nl)
+                        ).
+
+inPortuguese(Object) :- portuguese(Object, ObjectPT), write(ObjectPT).
+
+% --------------- Remove object from maze -------------- %
+
+removeFromMaze(Position) :- connected(Position, _, Father, Left, Right), 
+							retract(connected(Position, _, _, _, _)),
+							asserta(connected(Position, noObject, Father, Left, Right)).
+
+%% isConnected(Position) :- connected(Position, _, Father, Left, Right), nl,
+%%                          write(Father), nl, printPosition(Left),nl, printPosition(Right).
 
 
 %% printPosition(Position) :- 
 %%                         Position == nil, write("Nada ");
 %%                         connected(Position, Object, _, _, _),
 %%                         write(Object), nl, write(Father), nl, write(Left),nl, write(Right).
-
-printMaze(Position) :- connected(Position, Object, Father, Left, Right), nl,
-                write('{'), nl, 
-                write(' Posição => '), write(Position), nl,
-                write(' Objeto => '), write(Object), nl,
-                write(' Pai => '), write(Father), nl,
-                printSons(Left, Right),
-                write('}'), nl.
-
-printSubMazes(Position) :- deleteFromBag(flashlight),
-                           connected(Position, _, _, Left, Right), 
-                           
-                           (
-                            (Left == nil, nl, write('Não há saída a esquerda'), nl);
-                            (connected(Left, LeftObject, _, _, _), 
-                            nl, write(LeftObject), write(' a esquerda.'), nl)
-                           ),                           
-                           
-                           (
-                            (Right == nil, nl, write('Nada há saída a direita'), nl);
-                            (connected(Right, RightObject, _, _, _),
-                            nl, write(RightObject), write(' a direita.'), nl)
-                            ).
-
-translate(Object) :- portuguese(Object, ObjectPT), write(ObjectPT).
