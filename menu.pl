@@ -10,16 +10,20 @@
 
 :- dynamic connected/5.
 
+% Keys and Doors
+key(10).
+door(10).
+
 % Left tree
 connected(1, startMaze, nil, 2, 15).
 connected(2, noObject, 1, 3, 4).
-connected(3, key10, 2, 5, 6).
+connected(3, key(10), 2, 5, 6).
 connected(4, noObject, 2, nil, nil).
 connected(5, noObject, 3, 7, 8).
 connected(6, hole, 3, nil, nil).
 connected(7, flashlight, 5, 9, 10).
 connected(8, noObject, 5, nil, nil).
-connected(9, door10, 7, 11, 12).
+connected(9, door(10), 7, 11, 12).
 connected(10, hole, 7, nil, nil).
 connected(11, sword, 9, 13, 14).
 connected(12, bear, 9, nil, nil).
@@ -46,8 +50,8 @@ portuguese(hole, "Buraco").
 portuguese(bear, "Urso").
 portuguese(flashlight, "Lanterna").
 portuguese(sword, "Espada").
-portuguese(key10, "Chave10").
-portuguese(door10, "Porta10").
+portuguese(key(10), "Chave 10").
+portuguese(door(10), "Porta 10").
 portuguese(endMaze, "Saida").
 
 %----------------------------------------------------- Rules ---------------------------------------------------- %
@@ -55,7 +59,7 @@ portuguese(endMaze, "Saida").
 
 startPlay :- write('Bem-vindo ao Blind Mazell'), nl,
              write('Digite o seu nome: '), read(Player), nl,
-             write('Olá '), write(Player), nl,
+             write('Olá '), write(Player), write('!'), nl,
              play(1). % Star play on the first position
              
 play(Position) :- nl, write('Para onde você deseja ir?'), nl, possibleWays(Position), flashlightIsOption, 
@@ -64,19 +68,19 @@ play(Position) :- nl, write('Para onde você deseja ir?'), nl, possibleWays(Posi
 
 % ------------------ Option rules ---------------- %
 
-option(a, Position) :- connected(Position, _, _, Left, _), write(Left), (Left \== nil,
+option(a, Position) :- connected(Position, _, _, Left, _), (Left \== nil,
                        connected(Left, Object, _, _, _),nl,
                        ident, write("Você foi para a esquerda"), nl),
                        checkObject(Left, Object); 
                        nl, ident, write("Sem saída. Volte!"), nl, play(Position).
 
-option(d, Position) :- connected(Position, _, _, _, Right), write(Right), (Right \== nil,
+option(d, Position) :- connected(Position, _, _, _, Right), (Right \== nil,
                        connected(Right, Object, _, _, _),nl,
                        ident, write("Você foi para a direita"), nl),
                        checkObject(Right, Object); 
                        nl, ident, write("Sem saída. Volte!"), nl, play(Position).
 
-option(s, Position) :- connected(Position, _, Father, _, _), write(Father), (Father \== nil,
+option(s, Position) :- connected(Position, _, Father, _, _), (Father \== nil,
                        connected(_, Object, Father, _, _), nl, 
                        ident, write("Você voltou"), nl,
                        checkObject(Father, Object)) ; 
@@ -98,19 +102,28 @@ possibleWays(Position) :- connected(Position, _, Father, Left, Right),
 checkObject(Position, noObject) :- play(Position).
 
 checkObject(Position, bear) :- (checkBag(sword), nl, ident, write("Voce encontrou um urso, mas voce tinha uma espada e o matou"), 
-                                deleteFromBag(sword),nl, removeFromMaze(Position), play(Position));
+                                deleteFromBag(sword),nl, removeObjectFromMaze(Position), play(Position));
                                 nl, ident, write("Ghrrr!! Voce encontrou um urso, mas voce não tinha uma espada e morreu. Fim do jogo."), nl.
 
-checkObject(Position, sword) :- nl, ident, write("Voce encontrou uma espada"), nl, addOnBag(sword), removeFromMaze(Position), play(Position).
+checkObject(Position, sword) :- nl, ident, write("Voce encontrou uma espada"), nl, addOnBag(sword), removeObjectFromMaze(Position), play(Position).
 
 checkObject(Position, flashlight) :- nl, ident, write("Voce encontrou uma lanterna. Voce pode usar apenas uma vez para enxergar o que tem nos seus possíveis caminhos."), nl, 
-									 addOnBag(flashlight), removeFromMaze(Position), play(Position). 
+									 addOnBag(flashlight), removeObjectFromMaze(Position), play(Position). 
+
+checkObject(Position, key(Value)) :- nl, addOnBag(key(Value)), removeObjectFromMaze(Position), write("Voce pegou a "), inPortuguese(key(Value)), write("."), nl, play(Position).
+
+checkObject(Position, door(Key)) :- nl, checkBag(key(Key)), 
+                                    (ident, write("Aqui tinha uma porta, mas você tinha a chave e a abriu."), play(Position));
+                                    (
+                                        nl, ident, write("Tem uma porta aqui e você não tem a chave. Volte e ache a chave da "), inPortuguese(door(Key)), write("!"), nl,
+                                        %%  If the player dont have the key to the door, he/she goes back to the previous maze (Father)
+                                        connected(Position, _, Father, _, _),
+                                        play(Father)
+                                    ).
 
 checkObject(_, hole) :- nl, ident, write("Voce caiu em um buraco! Fim do jogo."), nl.
 
 checkObject(_, endMaze) :- nl, ident, write("Voce encontrou a saída! Fim do jogo."), nl, showMaze(1).
-
-checkObject(Position, _) :- write(""), play(Position).
 
 ident :- write("            ").
 
@@ -139,9 +152,9 @@ inPortuguese(Object) :- portuguese(Object, ObjectPT), write(ObjectPT).
 
 % --------------- Remove object from maze -------------- %
 
-removeFromMaze(Position) :- connected(Position, _, Father, Left, Right), 
-							retract(connected(Position, _, _, _, _)),
-							asserta(connected(Position, noObject, Father, Left, Right)).
+removeObjectFromMaze(Position) :- connected(Position, _, Father, Left, Right), 
+								  retract(connected(Position, _, _, _, _)),
+								  asserta(connected(Position, noObject, Father, Left, Right)).
 
 showMaze(Position) :- Position == nil, write("Nada");  
 					  connected(Position, Object, _, Left, Right),
