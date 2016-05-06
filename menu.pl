@@ -1,17 +1,38 @@
 startPlay :- write('Bem-vindo ao Blind Mazell'), nl,
 			 write('Digite o seu nome: '), read(Player), nl,
 			 write('Olá '), write(Player), nl,
-			 play(Player).
+			 play(1).
 			 
-play(Player) :- write('Para onde você deseja ir:'),nl, write('a - Esquerda, d- Direita'),
-				read(Option), option(Option), play(Player).
+play(Position) :- nl, write('Para onde você deseja ir:'), nl, write('a - Esquerda, d- Direita'),
+				read(Option), option(Option, Position).
 
-option(a) :- write('Esquerda'), nl.
-option(d) :- write('Direita'), nl.
-option(_) :- write('Opção inexistente'), nl.
+option(a, Position) :- connected(Position, _, _, Left, _), write(Left), (Left \== nil,
+					   connected(Left, Object, _, _, _), checkObject(Left, Object),
+					   nl, write('Você foi para a esquerda'), nl); nl, write("Sem saída. Volte!"), nl, play(Position).
 
-isConnected(Position) :- connected(Position, _, Father, Left, Right), nl, 
+option(d, Position) :- connected(Position, _, _, _, Right), write(Right), (Right \== nil,
+					   connected(Right, Object, _, _, _), checkObject(Right, Object),
+			 		   nl, write('Você foi para a direita'), nl) ; nl, write("Sem saída. Volte!"), nl, play(Position).
+
+option(s, Position) :- connected(Position, _, Father, _, _), write(Father), (Father \== nil,
+					   connected(_, Object, Father, _, _), checkObject(Father, Object),
+			 		   nl, write('Você foi para a direita'), nl) ; nl, write("Você está no começo do labirinto, não dá mais pra voltar!"), nl, play(Position).
+
+option(_, Position) :- write('Opção inexistente'), nl, play(Position).
+
+checkObject(Position, noObject) :- play(Position).
+checkObject(Position, bear) :- (checkBag(sword), nl, write("Voce encontrou um urso, mas voce tinha uma espada e o matou"), nl, play(Position));
+						       nl, write("Ghrrr!! Voce encontrou um urso, mas voce não tinha uma espada e morreu. Fim do jogo."), nl.
+checkObject(Position, sword) :- nl, write("Voce encontrou uma espada"), nl, addOnBag(sword), play(Position).
+checkObject(_, hole) :- nl, write("Voce caiu em um buraco! Fim do jogo."), nl.
+checkObject(Position, Object) :- write(""), play(Position).
+
+isConnected(Position) :- connected(Position, _, Father, Left, Right), nl,
 						 write(Father), nl, printPosition(Left),nl, printPosition(Right).
+
+checkBag(Object):- bag(Object), !.
+addOnBag(Object) :- asserta(bag(Object)).
+deleteFromBag(Object) :- retract(bag(Object)).
 
 printPosition(Position) :- 
 						% If position is nil, cut
@@ -28,7 +49,6 @@ printMaze(Position) :- connected(Position, Object, Father, Left, Right), nl,
 				write('}'), nl.
 
 printSons(Left, Right) :- 
-				
 				%If the left is nil, cut
 				Left == nil, 
 				write('Esquerda => '), write(Left), 
@@ -74,3 +94,6 @@ connected(18, endMaze, 17, nil, nil).
 connected(19, noObject, 17, 20, 21).
 connected(20, noObject, 19, nil, nil).
 connected(21, hole, 19, nil, nil).
+
+:- dynamic bag/1.
+bag(nothing).
