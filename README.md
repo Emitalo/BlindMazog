@@ -16,7 +16,7 @@ O BlindMazog foi desenvolvido na linguagem Prolog, portanto é necessário ter a
 
 Baixe o código do ***BlindMazog*** e entre na pasta pelo terminal e execute os seguintes comandos:
 
-`swipl` -> Para abrir o ghci
+`swipl` -> Para abrir o SWI-Prolog
 
 `[blindmazog].` -> Para carregar o código do jogo
 
