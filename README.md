@@ -22,7 +22,7 @@ Baixe o código do ***BlindMazog*** e entre na pasta pelo terminal e execute os 
 
 `startPlay.` -> Para começar a jogar!!
 
-## Autores do ***BlindMazell***
+## Autores do ***BlindMazog***
 
 [@italopaiva](https://github.com/italopaiva)
 
