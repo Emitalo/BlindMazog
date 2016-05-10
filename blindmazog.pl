@@ -1,7 +1,6 @@
 
 %------------------------------------------ Database ------------------------------------------------%
 
-% ----------------- Scenario 1 ------------------------------ %
 
 % Creating maze
     % Object types: startMaze, noObject, key, door, bear, sword, flashlight, hole, endMaze
@@ -22,30 +21,55 @@
 key(10).
 door(10).
 
+% ----------------- Scenario 1 ------------------------------ %
 % Left tree
-connected(1, startMaze, nil, 2, 15).
-connected(2, noObject, 1, 3, 4).
-connected(3, key(10), 2, 5, 6).
-connected(4, noObject, 2, nil, nil).
-connected(5, noObject, 3, 7, 8).
-connected(6, hole, 3, nil, nil).
-connected(7, flashlight, 5, 9, 10).
-connected(8, noObject, 5, nil, nil).
-connected(9, door(10), 7, 11, 12).
-connected(10, hole, 7, nil, nil).
-connected(11, sword, 9, 13, 14).
-connected(12, bear, 9, nil, nil).
-connected(13, bear, 11, nil, nil).
-connected(14, noObject, 11, nil, nil).
+connected(11, startMaze, nil, 12, 117).
+connected(12, noObject, 11, 13, 14).
+connected(13, key(10), 12, 15, 16).
+connected(14, noObject, 12, nil, nil).
+connected(15, noObject, 13, 17, 18).
+connected(16, hole, 13, nil, nil).
+connected(17, flashlight, 15, 19, 110).
+connected(18, noObject, 15, nil, nil).
+connected(19, door(10), 17, 111, 112).
+connected(110, hole, 17, nil, nil).
+connected(111, sword, 19, 113, 114).
+connected(112, bear, 19, nil, nil).
+connected(113, bear, 111, 115, 116).
+connected(114, noObject, 111, nil, nil).
+connected(115, endMaze, 113, nil, nil).
+connected(116, noObject, 113, nil, nil).
 
 % Right tree
-connected(15, noObject, 1, 16, 17).
-connected(16, hole, 15, nil, nil).
-connected(17, bear, 15, 18, 19).
-connected(18, endMaze, 17, nil, nil).
-connected(19, noObject, 17, 20, 21).
-connected(20, noObject, 19, nil, nil).
-connected(21, hole, 19, nil, nil).
+connected(117, noObject, 11, 118, 119).
+connected(118, bear, 117, nil, nil).
+connected(119, hole, 117, nil, nil).
+
+% ----------------- Scenario 2 ------------------------------ %
+% Left tree
+connected(21, startMaze, nil, 22, 215).
+connected(22, noObject, 21, 23, 24).
+connected(23, key(10), 22, 25, 26).
+connected(24, noObject, 22, nil, nil).
+connected(25, noObject, 23, 27, 28).
+connected(26, hole, 23, nil, nil).
+connected(27, flashlight, 25, 29, 210).
+connected(28, noObject, 25, nil, nil).
+connected(29, door(10), 27, 211, 212).
+connected(210, hole, 27, nil, nil).
+connected(211, sword, 29, 213, 214).
+connected(212, bear, 29, nil, nil).
+connected(213, bear, 211, nil, nil).
+connected(214, noObject, 211, nil, nil).
+
+% Right tree
+connected(215, noObject, 21, 216, 217).
+connected(216, hole, 215, nil, nil).
+connected(217, bear, 215, 218, 219).
+connected(218, endMaze, 217, nil, nil).
+connected(219, noObject, 217, 220, 221).
+connected(220, noObject, 219, nil, nil).
+connected(221, hole, 219, nil, nil).
 
 % Bag
 bag(nothing).
@@ -61,13 +85,19 @@ portuguese(key(10), "Chave 10").
 portuguese(door(10), "Porta 10").
 portuguese(endMaze, "Saida").
 
+
+
 %----------------------------------------------------- Rules ---------------------------------------------------- %
 % -------------- Play --------------- %
 
 startPlay :- write('Bem-vindo ao Blind Mazell'), nl,
              write('Digite o seu nome: '), read(Player), nl,
              write('Olá '), write(Player), write('!'), nl,
-             play(1). % Star play on the first position
+             write('Qual o labirinto deseja jogar? 1 ou 2?'),
+             nl, read(Scenario), scenario(Scenario).
+
+scenario(1)  :- play(11), deleteFromBag(_). % Start play on the first position of scenario 1
+scenario(2)  :- play(21), deleteFromBag(_). % Start play on the first position of scenario 2
              
 play(Position) :- nl, write('Para onde você deseja ir?'), nl, possibleWays(Position), flashlightIsOption, 
 				  read(Option), option(Option, Position).
@@ -130,7 +160,7 @@ checkObject(Position, door(Key)) :- nl, checkBag(key(Key)),
 
 checkObject(_, hole) :- nl, showMessage("Voce caiu em um buraco! Fim do jogo."), nl.
 
-checkObject(_, endMaze) :- nl, showMessage("Voce encontrou a saída! Fim do jogo."), nl, showMaze(1).
+checkObject(_, endMaze) :- nl, showMessage("Voce encontrou a saída! Fim do jogo."), nl.
 
 ident :- write("\t").
 showMessage(Message) :- ident, write(Message).
@@ -164,8 +194,3 @@ inPortuguese(Object) :- portuguese(Object, ObjectPT), write(ObjectPT).
 removeObjectFromMaze(Position) :- connected(Position, _, Father, Left, Right), 
 								  retract(connected(Position, _, _, _, _)),
 								  asserta(connected(Position, noObject, Father, Left, Right)).
-
-showMaze(Position) :- Position == nil, write("Nada");  
-					  connected(Position, Object, _, _, _),
-                      nl, ident, inPortuguese(Object), nl, 
-                      ident, subMazes(Position).
